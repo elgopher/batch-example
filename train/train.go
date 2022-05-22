@@ -8,7 +8,8 @@ import (
 )
 
 type Train struct {
-	Seats []string
+	Seats    []string
+	Metadata any
 }
 
 func New(maxSeats int) *Train {
