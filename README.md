@@ -12,4 +12,4 @@ Web application example using [github.com/elgopher/batch](https://github.com/elg
 
 * Buy a train ticket
 
-`$ curl "http://localhost:8080/book?train=batchy&person=elgopher&seat=3"`
+`$ curl -v "http://localhost:8080/book?train=batchy&person=elgopher&seat=3"`
