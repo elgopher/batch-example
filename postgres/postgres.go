@@ -37,7 +37,7 @@ func (d Store) LoadTrain(ctx context.Context, key string) (*train.Train, error) 
 
 	if err == sql.ErrNoRows {
 		t := train.New(30)
-		t.Metadata = 0 // first version is 0
+		t.Metadata = 0 // for new train, version is 0
 		return t, nil
 	}
 
@@ -56,28 +56,37 @@ func (d Store) LoadTrain(ctx context.Context, key string) (*train.Train, error) 
 }
 
 func (d Store) SaveTrain(ctx context.Context, key string, t *train.Train) error {
-	state, err := json.Marshal(t)
-	if err != nil {
-		return fmt.Errorf("train marshalling failed: %w", err)
+	previousVersion := t.Metadata.(int)
+	t.Metadata = previousVersion + 1
+
+	rollbackVersionChange := func() {
+		t.Metadata = previousVersion
 	}
 
-	version := t.Metadata
+	state, err := json.Marshal(t)
+	if err != nil {
+		rollbackVersionChange()
+		return fmt.Errorf("train marshalling failed: %w", err)
+	}
 
 	upsert := `INSERT INTO train(key, state, ver)
 				VALUES($1, $2, $3)
 				ON CONFLICT ON CONSTRAINT train_pkey 
-				DO UPDATE SET state=$2, ver=train.ver+1 WHERE train.key=$1 AND train.ver=$3`
-	result, err := d.db.ExecContext(ctx, upsert, key, state, version)
+				DO UPDATE SET state=$2, ver=$3 WHERE train.key=$1 AND train.ver=$4`
+	result, err := d.db.ExecContext(ctx, upsert, key, state, t.Metadata, previousVersion)
 	if err != nil {
+		rollbackVersionChange()
 		return fmt.Errorf("ExecContext failed: %w", err)
 	}
 
 	rows, err := result.RowsAffected()
 	if err != nil {
+		rollbackVersionChange()
 		return fmt.Errorf("RowsAffected failed: %w", err)
 	}
 
 	if rows == 0 {
+		rollbackVersionChange()
 		return fmt.Errorf("concurrent modification of key %s", key)
 	}
 
