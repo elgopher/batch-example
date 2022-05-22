@@ -45,22 +45,26 @@ func bookHandler(trainService TrainService) func(http.ResponseWriter, *http.Requ
 
 		err = trainService.Book(request.Context(), trainKey, seat, person)
 
-		if errors.Is(err, train.ErrValidation("")) {
-			writer.WriteHeader(http.StatusBadRequest)
-			_, _ = writer.Write([]byte(err.Error()))
-			return
-		}
+		writeError(writer, err)
+	}
+}
 
-		if errors.Is(err, batch.OperationCancelled) {
-			// context.Context was cancelled, so the operation
-			// this could happen when connection was closed or request was cancelled (http/2)
-			return
-		}
+func writeError(writer http.ResponseWriter, err error) {
+	if errors.Is(err, train.ErrValidation("")) {
+		writer.WriteHeader(http.StatusBadRequest)
+		_, _ = writer.Write([]byte(err.Error()))
+		return
+	}
 
-		if err != nil {
-			writer.WriteHeader(http.StatusInternalServerError)
-			fmt.Println("internal server error:", err)
-			return
-		}
+	if errors.Is(err, batch.OperationCancelled) {
+		// context.Context was cancelled, so the operation
+		// this could happen when connection was closed or request was cancelled (http/2)
+		return
+	}
+
+	if err != nil {
+		writer.WriteHeader(http.StatusInternalServerError)
+		fmt.Println("internal server error:", err)
+		return
 	}
 }
