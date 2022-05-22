@@ -13,3 +13,9 @@ Web application example using [github.com/elgopher/batch](https://github.com/elg
 * Buy a train ticket
 
 `$ curl -v "http://localhost:8080/book?train=batchy&person=elgopher&seat=3"`
+
+## Load testing
+
+You can run [script.js](script.js) in [K6](https://k6.io) by executing:
+
+`$ k6 run script.js`
