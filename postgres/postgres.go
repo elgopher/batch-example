@@ -7,7 +7,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	_ "github.com/lib/pq"
@@ -29,22 +28,21 @@ func Start() (Store, error) {
 }
 
 func (d Store) LoadTrain(ctx context.Context, key string) (*train.Train, error) {
-	row := d.db.QueryRowContext(ctx, "SELECT state, ver FROM train WHERE key=$1", key)
-	if row.Err() != nil {
-		return nil, fmt.Errorf("QueryRowContext failed: %w", row.Err())
-	}
-
 	var state []byte
 	var version int
 
-	err := row.Scan(&state, &version)
+	err := d.db.
+		QueryRowContext(ctx, `SELECT state, ver FROM train WHERE key=$1`, key).
+		Scan(&state, &version)
+
 	if err == sql.ErrNoRows {
 		t := train.New(30)
-		t.Metadata = 0
+		t.Metadata = 0 // first version is 0
 		return t, nil
 	}
+
 	if err != nil {
-		return nil, fmt.Errorf("row Scan failed: %w", err)
+		return nil, fmt.Errorf("executing query failed: %w", err)
 	}
 
 	t := &train.Train{}
@@ -80,7 +78,7 @@ func (d Store) SaveTrain(ctx context.Context, key string, t *train.Train) error 
 	}
 
 	if rows == 0 {
-		return errors.New("concurrent modification error")
+		return fmt.Errorf("concurrent modification of key %s", key)
 	}
 
 	return nil
