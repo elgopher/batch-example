@@ -18,4 +18,4 @@ Web application example using [github.com/elgopher/batch](https://github.com/elg
 
 You can run [script.js](script.js) in [K6](https://k6.io) by executing:
 
-`$ k6 run script.js`
+`$ docker run --network batch-example_default --rm -i grafana/k6 run - <script.js`
