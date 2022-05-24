@@ -24,6 +24,8 @@ func Start() (Store, error) {
 		return Store{}, err
 	}
 
+	db.SetMaxOpenConns(100)
+
 	return Store{db: db}, nil
 }
 
