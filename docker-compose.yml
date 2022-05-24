@@ -6,6 +6,10 @@ services:
       - "8080:8080"
     links:
       - postgres
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
   postgres:
     image: postgres:14.3
     environment:
